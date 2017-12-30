@@ -88,6 +88,7 @@ node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outer
 - `--outputLayer` : Empty collection where spatially joined features are to be stored
 
 **Note**: All three layer collections must be different and have spatial indices.
+
 ---
 
 *Benchmark*:
