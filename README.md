@@ -11,11 +11,14 @@ npm install
 ```
 
 ## Layer Names
-For the following documentation refers to the layers in following manner for ease of understanding:
+For the following documentation refers to the layers in following manner for ease of understanding.
 
-- **Inner Layer : ** buildings
-- **Outer Layer : ** lots
-- **Outer Layer with Buffer : ** lots_buffer
+- **Inner Layer :** `buildings`
+- **Outer Layer :** `lots`
+- **Outer Layer with Buffer :** `lots_buffer`
+- **Output Layer:** `buildings_spatialJoin`
+
+**Note:** Creating a buffer for the outer layer is optional.
 
 ![buildings-and-lots](img/buildings-and-lots.jpg)
 ![lots-buffered](img/lots-buffered.jpg)
@@ -78,12 +81,13 @@ This is a multi-threaded process that will consume all available CPU cores.
 node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outerLayer lots --outputLayer buildings_spatialJoin
 ```
 
-#### Options
+#### Required
 - `--db` : MongoDB database url
 - `--innerLayer` : Database collection name containing inner layer features
 - `--outerLayer` : Database collection name containing outer layer features 
 - `--outputLayer` : Empty collection where spatially joined features are to be stored
 
+**Note**: All three layer collections must be different and have spatial indices.
 ---
 
 *Benchmark*:

@@ -1,6 +1,6 @@
 // node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outerLayer lots --outputLayer buildings_spatialJoin
 
-const argv = require('yargs').argv
+const argv = require('yargs').array('outerLayerAttributes').argv
 const MongoClient = require('mongodb').MongoClient
 const cluster = require('cluster')
 const numCPUs = require('os').cpus().length
@@ -9,22 +9,22 @@ const async = require('async')
 const mongoUrl = argv.db // 'mongodb://localhost:27017/nyc'
 const innerLayerCollection = argv.innerLayer // 'buildings'
 const outerLayerCollection = argv.outerLayer // 'lots'
+const outerLayerAttributes = argv.outerLayerAttributes // 'borough code'
 const outputLayerCollection = argv.outputLayer // 'buildings_spatialJoin'
 
-const workerBatchSize = 1000 // Size of features to be sent at once by master to workers for processing
+var workerBatchSize = 1000 // Size of features to be sent at once by master to workers for processing
 
 var childProcessPid = [] // Keep track of Child Processes PIDs
 var featureCursor
+var db = null
+var dbCollections = []
 
 if (innerLayerCollection && outerLayerCollection && outputLayerCollection) {
-	if (innerLayerCollection === outerLayerCollection || innerLayerCollection === outputLayerCollection || outerLayerCollection === outputLayerCollection) {
+	if (innerLayerCollection === outerLayerCollection || outerLayerCollection === outputLayerCollection || innerLayerCollection === outputLayerCollection) {
 		console.error(`Error: Input different layer collection names`)
 		process.exit()
 	}
-	console.log(`MongoDB URL: ${mongoUrl}`)
-	console.log(`Inner Layer: ${innerLayerCollection}`)
-	console.log(`Outer Layer: ${outerLayerCollection}`)
-	console.log(`Output Layer: ${outputLayerCollection}`)
+	// Begin the join process
 	init()
 } else {
 	console.error(`Invalid Arguments`)
@@ -33,9 +33,10 @@ if (innerLayerCollection && outerLayerCollection && outputLayerCollection) {
 
 function init() {
 	if (cluster.isMaster) {
-		console.log(innerLayerCollection)
-		console.log(outerLayerCollection)
-		var db = null
+		console.log(`MongoDB URL: ${mongoUrl}`)
+		console.log(`Inner Layer: ${innerLayerCollection}`)
+		console.log(`Outer Layer: ${outerLayerCollection}`)
+		console.log(`Output Layer: ${outputLayerCollection}`)
 		MongoClient.connect(mongoUrl)
 			.then(_db => {
 				console.log('Connected to DB')
@@ -44,6 +45,15 @@ function init() {
 				return db
 			})
 			.then((db) => {
+				return db.collection(outerLayerCollection).count()
+			})
+			.then((count) => {
+				// Adjust the worker batch size 
+				adjustWorkerBatchSize(count)
+				// Also fetch all the collection names in the database
+				return db.listCollections().toArray()
+			})
+			.then(() => {
 				featureCursor = db.collection(outerLayerCollection).find()
 			})
 			.catch(err => {
@@ -62,7 +72,7 @@ function init() {
 		}
 
 		// Master queue to iterate over a batch of features
-		var qMaster = async.queue(function(worker, callback) {
+		var qMaster = async.queue((worker, callback) => {
 			// Send Next Batch of Features
 			sendFeatureBatchToWorker(worker, () => {
 				callback()
@@ -80,9 +90,7 @@ function init() {
 				// Determine which worker is requesting next batch of features
 				for (const id in cluster.workers) {
 					if (cluster.workers[id].process.pid === msg.pid) {
-						qMaster.push(cluster.workers[id], function(err) {
-							if (err) console.error(err)
-						})
+						qMaster.push(cluster.workers[id], (err) => { if (err) console.error(err) })
 					}
 				}
 			}
@@ -104,27 +112,30 @@ function init() {
 			.catch(err => { console.error('Could not connect to DB ', err) })
 
 		// Spatial join worker queue of concurrency 10
-		var qWorker = async.queue(function(feature, callback) {
+		var qWorker = async.queue((outerLayerFeature, callback) => {
 			// -------------------------------------
-			// Find buildings and perform the join
+			// Find inner layer features and perform the join
 			// -------------------------------------
 			dbWorker.collection(innerLayerCollection).find({
 				'geometry': {
 					'$geoWithin': {
 						'$geometry': {
-							type: feature.geometry.type,
-							coordinates: feature.geometry.coordinates
+							type: outerLayerFeature.geometry.type,
+							coordinates: outerLayerFeature.geometry.coordinates
 						}
 					}
 				}
-			}).toArray((err, buildings) => {
-				async.eachSeries(buildings, function(building, callback) {
-					if (err) { console.log(err) }
-					building.properties.borough = feature.properties.Borough
-					delete building._id
-					dbWorker.collection(outputLayerCollection).insert(building, (err, res) => {
-						if (err) console.error(err)
-						callback() // Successful insert
+			}).toArray((err, innerLayerFeatures) => {
+				if (err) { console.error(`Error finding inner features: ${err}`) }
+				async.eachSeries(innerLayerFeatures, (innerLayerFeature, callback) => {
+					// Output the join to outputLayerCollection
+					for (var i = 0; i < outerLayerAttributes.length; i++) {
+						innerLayerFeature.properties[outerLayerAttributes] = outerLayerFeature.properties[outerLayerAttributes]
+					}
+					delete innerLayerFeature._id
+					dbWorker.collection(outputLayerCollection).insert(innerLayerFeature, (err, res) => {
+						if (err) callback(err)
+						else callback() // Successful insert
 					})
 				}, () => {
 					callback() // Inserted all found features
@@ -144,11 +155,7 @@ function init() {
 		process.on('message', (msg) => {
 			if (msg.data) {
 				// Rx some data from master and add it to the queue
-				qWorker.push(msg.data, function(err) {
-					if (!err) {
-						// Done
-					}
-				})
+				qWorker.push(msg.data, (err) => { if (err) console.error(`Worker Queue Error: ${err}`) })
 			}
 		})
 	}
@@ -164,6 +171,7 @@ function sendFeatureBatchToWorker(worker, callback) {
 	nextFeature(worker)
 
 	function nextFeature(worker) {
+		// console.log('worker ', worker.process.pid)
 		featureCursor.nextObject((err, feature) => {
 			if (!err && (feature !== null)) {
 				worker.send({ data: feature })
@@ -176,12 +184,24 @@ function sendFeatureBatchToWorker(worker, callback) {
 					callback() // End of batch
 				}
 			} else if (err) {
-				console.error(err)
-			} else {
-				console.timeEnd('spatialJoin')
-				console.log('Completed!')
+				console.error(`Master Queue Error: ${err}`)
 				process.exit()
+			} else {
+				// TODO: Check if other workers are done. Only then quit the application
+				console.timeEnd('spatialJoin')
+				console.log('Master queue exhausted')
+				// process.exit()
 			}
 		})
+	}
+}
+
+function adjustWorkerBatchSize(count) {
+	if (count < 10) {
+		workerBatchSize = 1
+	} else if (count < 100) {
+		workerBatchSize = 10
+	} else {
+		workerBatchSize = 1000
 	}
 }

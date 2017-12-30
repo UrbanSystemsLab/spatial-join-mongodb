@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.6.0",
-    "bluebird": "^3.4.7",
+    "bluebird": "^3.5.1",
     "mongodb": "^2.2.24",
     "prompt": "^1.0.0",
     "turf": "^3.0.14",
