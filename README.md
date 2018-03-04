@@ -78,7 +78,7 @@ db.lots_buffer.ensureIndex({"geometry":"2dsphere"})
 This is a multi-threaded process that will consume all available CPU cores.
 
 ```sh
-node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outerLayer lots --outputLayer buildings_spatialJoin
+node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outerLayer lots --outputLayer buildings_spatialJoin  --outerLayerAttributes 'borough_code'
 ```
 
 #### Required
