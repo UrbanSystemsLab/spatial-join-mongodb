@@ -28,17 +28,17 @@ For the following documentation refers to the layers in following manner for eas
 Once the collections are setup in MongoDB run the following command to perform Spatial Join on collections.
 
 ```sh
-node init.js --db '[database-url]' --innerLayer [Inner Layer Collection] --outerLayer [Outer Layer Collection] --outputLayer [Output Collection]
+node init.js --db '[database-url]' --innerLayer [Inner Layer Collection] --outerLayer [Outer Layer Collection] --outputLayer [Output Collection] --outerLayerAttributes 'Attribute 0' 'Attribute 1' ... 'Attribute n'
 ```
 
 #### Example
 ```sh
-node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outerLayer lots --outputLayer buildings_spatialJoin
+node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outerLayer lots --outputLayer buildings_spatialJoin --outerLayerAttributes 'borough_code'
 ```
 
 ## Setup and Process
 
-**Optional: Create a buffer for the outer layer**
+**Recommended: Create a buffer for the outer layer**
 
 If the difference between inner layer polygons and outer layer polygons is quite small then a [fixed distance buffer](https://docs.qgis.org/2.6/en/docs/user_manual/processing_algs/qgis/vector_geometry_tools/fixeddistancebuffer.html) can be created for the outer layer. For example, an outer layer maybe building lots and inner layer might be building footprint. The coordinates may be too close for the spatial join to effectively run, especially if the data sets were obtained from different sources. In this case, `0.00002` worked the best.
 
@@ -86,7 +86,7 @@ node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outer
 - `--innerLayer` : Database collection name containing inner layer features
 - `--outerLayer` : Database collection name containing outer layer features 
 - `--outputLayer` : Empty collection where spatially joined features are to be stored
-
+- `--outerLayerAttributes` : Outer layer feature attributes to be added to contained inner layer features. *Separated by space*
 **Note**: All three layer collections must be different and have spatial indices.
 
 ---

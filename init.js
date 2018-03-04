@@ -1,4 +1,4 @@
-// node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outerLayer lots --outputLayer buildings_spatialJoin
+// node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outerLayer lots --outputLayer buildings_spatialJoin --outerLayerAttributes 'borough'
 
 const argv = require('yargs').array('outerLayerAttributes').argv
 const MongoClient = require('mongodb').MongoClient
@@ -28,7 +28,7 @@ if (innerLayerCollection && outerLayerCollection && outputLayerCollection) {
 	init()
 } else {
 	console.error(`Invalid Arguments`)
-	console.log(`Example: node init.js --db 'mongodb://localhost:27017/db' --innerLayer buildings --outerLayer lots --outputLayer buildings_spatialJoin`)
+	console.log(`Example: node init.js --db 'mongodb://localhost:27017/db' --innerLayer buildings --outerLayer lots --outputLayer buildings_spatialJoin --outerLayerAttributes 'borough'`)
 }
 
 function init() {
@@ -130,7 +130,7 @@ function init() {
 				async.eachSeries(innerLayerFeatures, (innerLayerFeature, callback) => {
 					// Output the join to outputLayerCollection
 					for (var i = 0; i < outerLayerAttributes.length; i++) {
-						innerLayerFeature.properties[outerLayerAttributes] = outerLayerFeature.properties[outerLayerAttributes]
+						innerLayerFeature.properties[outerLayerAttributes[i]] = outerLayerFeature.properties[outerLayerAttributes[i]]
 					}
 					delete innerLayerFeature._id
 					dbWorker.collection(outputLayerCollection).insert(innerLayerFeature, (err, res) => {
