@@ -42,7 +42,7 @@ node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outer
 
 If the difference between inner layer polygons and outer layer polygons is quite small then a [fixed distance buffer](https://docs.qgis.org/2.6/en/docs/user_manual/processing_algs/qgis/vector_geometry_tools/fixeddistancebuffer.html) can be created for the outer layer. For example, an outer layer maybe building lots and inner layer might be building footprint. The coordinates may be too close for the spatial join to effectively run, especially if the data sets were obtained from different sources. In this case, `0.00002` worked the best.
 
-WSG84 Coordinate System has been used for all features throughout the process.
+**EPSG:4326 Geodetic coordinate system** has been used for all features throughout the process.
 
 ### Import the Layers in MongoDB
 Create empty collections in MongoDB before importing the data
@@ -86,7 +86,8 @@ node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outer
 - `--innerLayer` : Database collection name containing inner layer features
 - `--outerLayer` : Database collection name containing outer layer features 
 - `--outputLayer` : Empty collection where spatially joined features are to be stored
-- `--outerLayerAttributes` : Outer layer feature attributes to be added to contained inner layer features. *Separated by space*
+- `--outerLayerAttributes` : Outer layer feature attributes to be added to contained inner layer features. **Separated by space**
+
 **Note**: All three layer collections must be different and have spatial indices.
 
 

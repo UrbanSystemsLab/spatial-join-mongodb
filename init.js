@@ -14,7 +14,7 @@ Example:
 node init.js --db 'mongodb://localhost:27017/db' \
 --innerLayer buildings --outerLayer lots \
 --outputLayer buildings_spatialJoin \
---outerLayerAttributes attribute-a attribute-b attribute-c
+--outerLayerAttributes 'attribute-a' 'attribute-b' 'attribute-c'
 
 ////////////////////////////////////////////////////////////////////
 */
@@ -30,7 +30,7 @@ const argv = require('yargs').array('outerLayerAttributes').argv
 const mongoUrl = argv.db // 'mongodb://localhost:27017/nyc'
 const innerLayerCollection = argv.innerLayer // 'buildings'
 const outerLayerCollection = argv.outerLayer // 'lots'
-const outerLayerAttributes = argv.outerLayerAttributes// 'attribute-a attribute-b attribute-c'
+const outerLayerAttributes = argv.outerLayerAttributes// 'attribute-a' 'attribute-b' 'attribute-c'
 const outputLayerCollection = argv.outputLayer // 'buildings_spatialJoin'
 
 var workerBatchSize = 1000 // Size of features to be sent at once by master to workers for processing
