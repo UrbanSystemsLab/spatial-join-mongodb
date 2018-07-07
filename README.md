@@ -40,7 +40,7 @@ node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outer
 
 **Recommended: Create a buffer for the outer layer**
 
-If the difference between inner layer polygons and outer layer polygons is quite small then a [fixed distance buffer](https://docs.qgis.org/2.6/en/docs/user_manual/processing_algs/qgis/vector_geometry_tools/fixeddistancebuffer.html) can be created for the outer layer. For example, an outer layer maybe building lots and inner layer might be building footprint. The coordinates may be too close for the spatial join to effectively run, especially if the data sets were obtained from different sources. In this case, `0.00002` worked the best.
+If the difference between inner layer polygons and outer layer polygons is quite small then a [fixed distance buffer](https://docs.qgis.org/2.8/en/docs/user_manual/processing_algs/qgis/vector_geometry_tools/fixeddistancebuffer.html) can be created for the outer layer. For example, an outer layer maybe building lots and inner layer might be building footprint. The coordinates may be too close for the spatial join to effectively run, especially if the data sets were obtained from different sources. In this case, `0.00002` worked the best.
 
 **EPSG:4326 Geodetic coordinate system** has been used for all features throughout the process.
 
