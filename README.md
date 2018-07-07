@@ -89,6 +89,15 @@ node init.js --db 'mongodb://localhost:27017/nyc' --innerLayer buildings --outer
 - `--outerLayerAttributes` : Outer layer feature attributes to be added to contained inner layer features. *Separated by space*
 **Note**: All three layer collections must be different and have spatial indices.
 
+
+### Exporting Spatial Join Data
+
+Run this command after the spatial join process is completed to get your data.
+
+```sh
+mongoexport --db [Database-name] -c [Collection-name] --out "[export-filename].json" --jsonArray
+```
+
 ---
 
 *Benchmark*:
